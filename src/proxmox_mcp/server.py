@@ -18,6 +18,7 @@ import logging
 import os
 import sys
 import signal
+import warnings
 from typing import Optional, List, Annotated
 
 from mcp.server.fastmcp import FastMCP
@@ -25,8 +26,16 @@ from mcp.server.fastmcp.tools import Tool
 from mcp.types import TextContent as Content
 from pydantic import Field
 
+# Configure warnings before importing other modules
+warnings.filterwarnings('default')  # Enable all warnings by default
+
 from .config.loader import load_config
 from .core.logging import setup_logging
+from .utils.warnings_fix import setup_warning_filters
+
+# Set up warning filters early
+setup_warning_filters()
+
 from .core.proxmox import ProxmoxManager
 from .tools.node import NodeTools
 from .tools.vm import VMTools

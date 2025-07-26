@@ -15,6 +15,10 @@ import logging
 from typing import Dict, Any
 from proxmoxer import ProxmoxAPI
 from ..config.models import ProxmoxConfig, AuthConfig
+from ..utils.warnings_fix import fix_proxmoxer_warnings
+
+# Apply warnings fix immediately after importing proxmoxer
+fix_proxmoxer_warnings()
 
 class ProxmoxManager:
     """Manager class for Proxmox API operations.
