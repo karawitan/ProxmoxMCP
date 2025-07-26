@@ -5,7 +5,7 @@ Tests for VM console operations.
 import pytest
 from unittest.mock import Mock, patch
 
-from proxmox_mcp.tools.vm_console import VMConsoleManager
+from proxmox_mcp.tools.console import VMConsoleManager
 
 @pytest.fixture
 def mock_proxmox():
@@ -15,10 +15,15 @@ def mock_proxmox():
     mock.nodes.return_value.qemu.return_value.status.current.get.return_value = {
         "status": "running"
     }
-    mock.nodes.return_value.qemu.return_value.agent.exec.post.return_value = {
-        "out": "command output",
-        "err": "",
-        "exitcode": 0
+    # Fix mock to match actual API usage: agent("exec").post() and agent("exec-status").get()
+    mock.nodes.return_value.qemu.return_value.agent.return_value.post.return_value = {
+        "pid": 12345
+    }
+    mock.nodes.return_value.qemu.return_value.agent.return_value.get.return_value = {
+        "out-data": "command output",
+        "err-data": "",
+        "exitcode": 0,
+        "exited": 1
     }
     return mock
 
@@ -39,7 +44,8 @@ async def test_execute_command_success(vm_console, mock_proxmox):
 
     # Verify correct API calls
     mock_proxmox.nodes.return_value.qemu.assert_called_with("100")
-    mock_proxmox.nodes.return_value.qemu.return_value.agent.exec.post.assert_called_with(
+    mock_proxmox.nodes.return_value.qemu.return_value.agent.assert_called_with("exec")
+    mock_proxmox.nodes.return_value.qemu.return_value.agent.return_value.post.assert_called_with(
         command="ls -l"
     )
 
@@ -65,7 +71,7 @@ async def test_execute_command_vm_not_found(vm_console, mock_proxmox):
 @pytest.mark.asyncio
 async def test_execute_command_failure(vm_console, mock_proxmox):
     """Test command execution failure."""
-    mock_proxmox.nodes.return_value.qemu.return_value.agent.exec.post.side_effect = \
+    mock_proxmox.nodes.return_value.qemu.return_value.agent.return_value.post.side_effect = \
         Exception("Command failed")
 
     with pytest.raises(RuntimeError, match="Failed to execute command"):
@@ -74,10 +80,12 @@ async def test_execute_command_failure(vm_console, mock_proxmox):
 @pytest.mark.asyncio
 async def test_execute_command_with_error_output(vm_console, mock_proxmox):
     """Test command execution with error output."""
-    mock_proxmox.nodes.return_value.qemu.return_value.agent.exec.post.return_value = {
-        "out": "",
-        "err": "command error",
-        "exitcode": 1
+    # Override default mock to return error output
+    mock_proxmox.nodes.return_value.qemu.return_value.agent.return_value.get.return_value = {
+        "out-data": "",
+        "err-data": "command error",
+        "exitcode": 1,
+        "exited": 1
     }
 
     result = await vm_console.execute_command("node1", "100", "invalid-command")
