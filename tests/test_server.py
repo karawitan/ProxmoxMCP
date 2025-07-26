@@ -25,9 +25,35 @@ def mock_env_vars():
         yield env_vars
 
 @pytest.fixture
+def mock_config():
+    """Fixture to mock load_config to use environment variables."""
+    from proxmox_mcp.config.models import Config, ProxmoxConfig, AuthConfig, LoggingConfig
+    
+    def mock_load_config(config_path=None):
+        return Config(
+            proxmox=ProxmoxConfig(
+                host=os.environ["PROXMOX_HOST"],
+                port=8006,
+                verify_ssl=True,
+                service="PVE"
+            ),
+            auth=AuthConfig(
+                user=os.environ["PROXMOX_USER"],
+                token_name=os.environ["PROXMOX_TOKEN_NAME"],
+                token_value=os.environ["PROXMOX_TOKEN_VALUE"]
+            ),
+            logging=LoggingConfig(
+                level=os.environ.get("LOG_LEVEL", "INFO")
+            )
+        )
+    
+    with patch("proxmox_mcp.server.load_config", side_effect=mock_load_config):
+        yield mock_load_config
+
+@pytest.fixture
 def mock_proxmox():
     """Fixture to mock ProxmoxAPI."""
-    with patch("proxmox_mcp.server.ProxmoxAPI") as mock:
+    with patch("proxmox_mcp.core.proxmox.ProxmoxAPI") as mock:
         mock.return_value.nodes.get.return_value = [
             {"node": "node1", "status": "online"},
             {"node": "node2", "status": "online"}
@@ -35,7 +61,7 @@ def mock_proxmox():
         yield mock
 
 @pytest.fixture
-def server(mock_env_vars, mock_proxmox):
+def server(mock_env_vars, mock_config, mock_proxmox):
     """Fixture to create a ProxmoxMCPServer instance."""
     return ProxmoxMCPServer()
 
@@ -158,11 +184,15 @@ async def test_execute_vm_command_success(server, mock_proxmox):
     mock_proxmox.return_value.nodes.return_value.qemu.return_value.status.current.get.return_value = {
         "status": "running"
     }
-    # Mock command execution
-    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.exec.post.return_value = {
-        "out": "command output",
-        "err": "",
-        "exitcode": 0
+    # Mock two-phase command execution: exec returns pid, exec-status returns results
+    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.post.return_value = {
+        "pid": 12345
+    }
+    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.get.return_value = {
+        "out-data": "command output",
+        "err-data": "",
+        "exitcode": 0,
+        "exited": 1
     }
 
     response = await server.mcp.call_tool("execute_vm_command", {
@@ -204,11 +234,15 @@ async def test_execute_vm_command_with_error(server, mock_proxmox):
     mock_proxmox.return_value.nodes.return_value.qemu.return_value.status.current.get.return_value = {
         "status": "running"
     }
-    # Mock command execution with error
-    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.exec.post.return_value = {
-        "out": "",
-        "err": "command not found",
-        "exitcode": 1
+    # Mock two-phase command execution with error
+    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.post.return_value = {
+        "pid": 12345
+    }
+    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.get.return_value = {
+        "out-data": "",
+        "err-data": "command not found",
+        "exitcode": 1,
+        "exited": 1
     }
 
     response = await server.mcp.call_tool("execute_vm_command", {

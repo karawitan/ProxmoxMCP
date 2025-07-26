@@ -44,7 +44,11 @@ async def test_execute_command_success(vm_console, mock_proxmox):
 
     # Verify correct API calls
     mock_proxmox.nodes.return_value.qemu.assert_called_with("100")
-    mock_proxmox.nodes.return_value.qemu.return_value.agent.assert_called_with("exec")
+    # Verify both agent calls were made (exec and exec-status)
+    agent_calls = mock_proxmox.nodes.return_value.qemu.return_value.agent.call_args_list
+    assert len(agent_calls) == 2
+    assert agent_calls[0][0] == ("exec",)  # First call: agent("exec")
+    assert agent_calls[1][0] == ("exec-status",)  # Second call: agent("exec-status")
     mock_proxmox.nodes.return_value.qemu.return_value.agent.return_value.post.assert_called_with(
         command="ls -l"
     )
