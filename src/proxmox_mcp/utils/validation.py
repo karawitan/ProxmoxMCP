@@ -12,9 +12,9 @@ Key features:
 - Error handling for invalid inputs
 """
 
-import re
-from typing import List, Optional, Union
 import logging
+import re
+from typing import Union
 
 logger = logging.getLogger("proxmox-mcp.validation")
 
@@ -152,17 +152,13 @@ class InputValidator:
 
         for part in command_parts:
             # Check for dangerous characters
-            if any(
-                char in part for char in ["|", "&", ";", ">", "<", "`", "$", "(", ")"]
-            ):
+            if any(char in part for char in ["|", "&", ";", ">", "<", "`", "$", "(", ")"]):
                 raise ValidationError(f"Command contains dangerous characters: {part}")
 
             # For non-base commands, check if they're in allowed args or safe file paths
             if part != base_command and part not in allowed_args:
                 # Allow safe file paths for certain commands
-                if base_command in ["cat", "ls"] and InputValidator._is_safe_file_path(
-                    part
-                ):
+                if base_command in ["cat", "ls"] and InputValidator._is_safe_file_path(part):
                     continue
                 elif not part.startswith("-"):  # Allow arguments that start with -
                     raise ValidationError(

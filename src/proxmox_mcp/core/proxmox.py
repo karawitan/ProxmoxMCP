@@ -12,9 +12,11 @@ interactions, ensuring consistent connection handling and authentication
 across the MCP server.
 """
 import logging
-from typing import Dict, Any
+from typing import Any, Dict
+
 from proxmoxer import ProxmoxAPI
-from ..config.models import ProxmoxConfig, AuthConfig
+
+from ..config.models import AuthConfig, ProxmoxConfig
 from ..utils.warnings_fix import fix_proxmoxer_warnings
 
 # Apply warnings fix immediately after importing proxmoxer
@@ -104,7 +106,7 @@ class ProxmoxManager:
             return api
         except Exception as e:
             self.logger.error(f"Failed to connect to Proxmox: {e}")
-            raise RuntimeError(f"Failed to connect to Proxmox: {e}")
+            raise RuntimeError(f"Failed to connect to Proxmox: {e}") from e
 
     def get_api(self) -> ProxmoxAPI:
         """Get the initialized Proxmox API instance.

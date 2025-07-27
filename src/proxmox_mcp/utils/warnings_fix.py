@@ -5,8 +5,8 @@ This module provides a more targeted approach to suppress only SSL-related warni
 instead of all urllib3 warnings, which can hide important RuntimeWarnings.
 """
 
-import warnings
 import logging
+import warnings
 
 try:
     import urllib3
@@ -17,9 +17,7 @@ except ImportError:
     URLLIB3_AVAILABLE = False
 
 try:
-    import requests
-
-    REQUESTS_AVAILABLE = True
+    REQUESTS_AVAILABLE = False
 except ImportError:
     REQUESTS_AVAILABLE = False
 
@@ -110,9 +108,7 @@ def setup_warning_filters():
     # You can add more specific filters here as needed
 
     # Example: Show deprecation warnings from our own code
-    warnings.filterwarnings(
-        "default", category=DeprecationWarning, module="proxmox_mcp.*"
-    )
+    warnings.filterwarnings("default", category=DeprecationWarning, module="proxmox_mcp.*")
 
     # Example: Show runtime warnings from our own code
     warnings.filterwarnings("default", category=RuntimeWarning, module="proxmox_mcp.*")

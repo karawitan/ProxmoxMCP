@@ -11,20 +11,23 @@ All tool implementations inherit from the ProxmoxTool base class to ensure
 consistent behavior and error handling across the MCP server.
 """
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, List, Optional
+
 from mcp.types import TextContent as Content
 from proxmoxer import ProxmoxAPI
+
 from ..formatting import ProxmoxTemplates
+
 
 class ProxmoxTool:
     """Base class for Proxmox MCP tools.
-    
+
     This class provides common functionality used by all Proxmox tool implementations:
     - Proxmox API access
     - Standardized logging
     - Response formatting
     - Error handling
-    
+
     All tool classes should inherit from this base class to ensure consistent
     behavior and error handling across the MCP server.
     """
@@ -73,6 +76,7 @@ class ProxmoxTool:
         else:
             # Fallback to JSON formatting for unknown types
             import json
+
             formatted = json.dumps(data, indent=2)
 
         return [Content(type="text", text=formatted)]
@@ -102,5 +106,5 @@ class ProxmoxTool:
             raise ValueError(f"Permission denied: {error_msg}")
         if "invalid" in error_msg.lower():
             raise ValueError(f"Invalid input: {error_msg}")
-        
+
         raise RuntimeError(f"Failed to {operation}: {error_msg}")

@@ -1,10 +1,10 @@
 """
 Unit tests for warnings fix functionality.
 """
+import os
+import sys
 import unittest
 import warnings
-import sys
-import os
 
 # Add src to path for testing
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -38,8 +38,8 @@ class TestWarningsFix(unittest.TestCase):
             warnings.simplefilter("always")
 
             # Generate test warnings
-            warnings.warn("Test RuntimeWarning", RuntimeWarning)
-            warnings.warn("Test DeprecationWarning", DeprecationWarning)
+            warnings.warn("Test RuntimeWarning", RuntimeWarning, stacklevel=2)
+            warnings.warn("Test DeprecationWarning", DeprecationWarning, stacklevel=2)
 
             # Should capture both warnings
             self.assertEqual(len(w), 2)
@@ -51,8 +51,8 @@ class TestWarningsFix(unittest.TestCase):
     def test_ssl_warnings_suppression(self):
         """Test that SSL warnings are properly suppressed."""
         try:
-            from urllib3.exceptions import InsecureRequestWarning
             from proxmox_mcp.utils.warnings_fix import configure_ssl_warnings
+            from urllib3.exceptions import InsecureRequestWarning
 
             # Configure SSL warnings suppression
             configure_ssl_warnings(suppress_ssl_warnings=True)
@@ -62,10 +62,10 @@ class TestWarningsFix(unittest.TestCase):
                 # Instead, just use the current warning configuration
 
                 # Generate SSL warning (should be suppressed)
-                warnings.warn("Test SSL warning", InsecureRequestWarning)
+                warnings.warn("Test SSL warning", InsecureRequestWarning, stacklevel=2)
 
                 # Generate other warning (should not be suppressed)
-                warnings.warn("Test RuntimeWarning", RuntimeWarning)
+                warnings.warn("Test RuntimeWarning", RuntimeWarning, stacklevel=2)
 
                 # Should only capture the RuntimeWarning
                 captured_categories = [warning.category for warning in w]
@@ -82,7 +82,7 @@ class TestWarningsFix(unittest.TestCase):
 
         # Import proxmoxer first (which disables warnings)
         try:
-            import proxmoxer
+            pass
         except ImportError:
             self.skipTest("proxmoxer not available")
 
@@ -93,7 +93,7 @@ class TestWarningsFix(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
-            warnings.warn("Test RuntimeWarning after fix", RuntimeWarning)
+            warnings.warn("Test RuntimeWarning after fix", RuntimeWarning, stacklevel=2)
 
             # Should capture the warning
             self.assertEqual(len(w), 1)

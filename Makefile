@@ -53,7 +53,7 @@ venv:
 	@echo "$(YELLOW)📦 Creating virtual environment...$(NC)"
 	python3 -m venv $(VENV_DIR)
 	$(PIP) install --upgrade pip
-	$(PIP) install build
+	$(PIP) install build python-dotenv pytest pytest-asyncio
 	$(PIP) install -e .
 	@echo "$(GREEN)✅ Virtual environment created in $(VENV_DIR)$(NC)"
 
@@ -71,8 +71,13 @@ install-dev:
 
 # Run tests
 test:
+	npm install --save-dev dotenv proxmox-api jest babel-jest @babel/preset-env
+	@#npm ls inflight
+	@#npm ls glob
+
 	@echo "$(YELLOW)🧪 Running tests...$(NC)"
 	. venv/bin/activate && pytest -v
+	npx jest tests/test_proxmox_connection.test.js
 	@echo "$(GREEN)✅ All tests passed$(NC)"
 
 # Run tests with verbose output

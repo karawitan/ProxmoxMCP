@@ -13,19 +13,21 @@ The tools handle both basic and detailed node information retrieval,
 with fallback mechanisms for partial data availability.
 """
 from typing import List
+
 from mcp.types import TextContent as Content
+
 from .base import ProxmoxTool
-from .definitions import GET_NODES_DESC, GET_NODE_STATUS_DESC
+
 
 class NodeTools(ProxmoxTool):
     """Tools for managing Proxmox nodes.
-    
+
     Provides functionality for:
     - Retrieving cluster-wide node information
     - Getting detailed status for specific nodes
     - Monitoring node health and resources
     - Handling node-specific API operations
-    
+
     Implements fallback mechanisms for scenarios where detailed
     node information might be temporarily unavailable.
     """
@@ -38,7 +40,7 @@ class NodeTools(ProxmoxTool):
         - Uptime statistics
         - CPU configuration and count
         - Memory usage and capacity
-        
+
         Implements a fallback mechanism that returns basic information
         if detailed status retrieval fails for any node.
 
@@ -61,35 +63,39 @@ class NodeTools(ProxmoxTool):
         try:
             result = self.proxmox.nodes.get()
             nodes = []
-            
+
             # Get detailed info for each node
             for node in result:
                 node_name = node["node"]
                 try:
                     # Get detailed status for each node
                     status = self.proxmox.nodes(node_name).status.get()
-                    nodes.append({
-                        "node": node_name,
-                        "status": node["status"],
-                        "uptime": status.get("uptime", 0),
-                        "maxcpu": status.get("cpuinfo", {}).get("cpus", "N/A"),
-                        "memory": {
-                            "used": status.get("memory", {}).get("used", 0),
-                            "total": status.get("memory", {}).get("total", 0)
+                    nodes.append(
+                        {
+                            "node": node_name,
+                            "status": node["status"],
+                            "uptime": status.get("uptime", 0),
+                            "maxcpu": status.get("cpuinfo", {}).get("cpus", "N/A"),
+                            "memory": {
+                                "used": status.get("memory", {}).get("used", 0),
+                                "total": status.get("memory", {}).get("total", 0),
+                            },
                         }
-                    })
+                    )
                 except Exception:
                     # Fallback to basic info if detailed status fails
-                    nodes.append({
-                        "node": node_name,
-                        "status": node["status"],
-                        "uptime": 0,
-                        "maxcpu": "N/A",
-                        "memory": {
-                            "used": node.get("maxmem", 0) - node.get("mem", 0),
-                            "total": node.get("maxmem", 0)
+                    nodes.append(
+                        {
+                            "node": node_name,
+                            "status": node["status"],
+                            "uptime": 0,
+                            "maxcpu": "N/A",
+                            "memory": {
+                                "used": node.get("maxmem", 0) - node.get("mem", 0),
+                                "total": node.get("maxmem", 0),
+                            },
                         }
-                    })
+                    )
             return self._format_response(nodes, "nodes")
         except Exception as e:
             self._handle_error("get nodes", e)

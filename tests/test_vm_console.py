@@ -2,9 +2,9 @@
 Tests for VM console operations.
 """
 
-import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
+import pytest
 from proxmox_mcp.tools.console import VMConsoleManager
 
 
@@ -17,9 +17,7 @@ def mock_proxmox():
         "status": "running"
     }
     # Fix mock to match actual API usage: agent("exec").post() and agent("exec-status").get()
-    mock.nodes.return_value.qemu.return_value.agent.return_value.post.return_value = {
-        "pid": 12345
-    }
+    mock.nodes.return_value.qemu.return_value.agent.return_value.post.return_value = {"pid": 12345}
     mock.nodes.return_value.qemu.return_value.agent.return_value.get.return_value = {
         "out-data": "command output",
         "err-data": "",
@@ -71,8 +69,8 @@ async def test_execute_command_vm_not_running(vm_console, mock_proxmox):
 @pytest.mark.asyncio
 async def test_execute_command_vm_not_found(vm_console, mock_proxmox):
     """Test command execution on non-existent VM."""
-    mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = (
-        Exception("VM not found")
+    mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = Exception(
+        "VM not found"
     )
 
     with pytest.raises(ValueError, match="not found"):
@@ -82,8 +80,8 @@ async def test_execute_command_vm_not_found(vm_console, mock_proxmox):
 @pytest.mark.asyncio
 async def test_execute_command_failure(vm_console, mock_proxmox):
     """Test command execution failure."""
-    mock_proxmox.nodes.return_value.qemu.return_value.agent.return_value.post.side_effect = Exception(
-        "Command failed"
+    mock_proxmox.nodes.return_value.qemu.return_value.agent.return_value.post.side_effect = (
+        Exception("Command failed")
     )
 
     with pytest.raises(RuntimeError, match="Failed to execute command"):

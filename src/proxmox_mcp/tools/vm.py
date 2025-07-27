@@ -14,20 +14,22 @@ The tools implement fallback mechanisms for scenarios where
 detailed VM information might be temporarily unavailable.
 """
 from typing import List
+
 from mcp.types import TextContent as Content
+
 from .base import ProxmoxTool
-from .definitions import GET_VMS_DESC, EXECUTE_VM_COMMAND_DESC
 from .console.manager import VMConsoleManager
+
 
 class VMTools(ProxmoxTool):
     """Tools for managing Proxmox VMs.
-    
+
     Provides functionality for:
     - Retrieving cluster-wide VM information
     - Getting detailed VM status and configuration
     - Executing commands within VMs
     - Managing VM console operations
-    
+
     Implements fallback mechanisms for scenarios where detailed
     VM information might be temporarily unavailable. Integrates
     with QEMU guest agent for VM command execution.
@@ -52,7 +54,7 @@ class VMTools(ProxmoxTool):
           * CPU cores
           * Memory allocation and usage
         - Node placement
-        
+
         Implements a fallback mechanism that returns basic information
         if detailed configuration retrieval fails for any VM.
 
@@ -83,30 +85,34 @@ class VMTools(ProxmoxTool):
                     # Get VM config for CPU cores
                     try:
                         config = self.proxmox.nodes(node_name).qemu(vmid).config.get()
-                        result.append({
-                            "vmid": vmid,
-                            "name": vm["name"],
-                            "status": vm["status"],
-                            "node": node_name,
-                            "cpus": config.get("cores", "N/A"),
-                            "memory": {
-                                "used": vm.get("mem", 0),
-                                "total": vm.get("maxmem", 0)
+                        result.append(
+                            {
+                                "vmid": vmid,
+                                "name": vm["name"],
+                                "status": vm["status"],
+                                "node": node_name,
+                                "cpus": config.get("cores", "N/A"),
+                                "memory": {
+                                    "used": vm.get("mem", 0),
+                                    "total": vm.get("maxmem", 0),
+                                },
                             }
-                        })
+                        )
                     except Exception:
                         # Fallback if can't get config
-                        result.append({
-                            "vmid": vmid,
-                            "name": vm["name"],
-                            "status": vm["status"],
-                            "node": node_name,
-                            "cpus": "N/A",
-                            "memory": {
-                                "used": vm.get("mem", 0),
-                                "total": vm.get("maxmem", 0)
+                        result.append(
+                            {
+                                "vmid": vmid,
+                                "name": vm["name"],
+                                "status": vm["status"],
+                                "node": node_name,
+                                "cpus": "N/A",
+                                "memory": {
+                                    "used": vm.get("mem", 0),
+                                    "total": vm.get("maxmem", 0),
+                                },
                             }
-                        })
+                        )
             return self._format_response(result, "vms")
         except Exception as e:
             self._handle_error("get VMs", e)
@@ -141,11 +147,12 @@ class VMTools(ProxmoxTool):
             result = await self.console_manager.execute_command(node, vmid, command)
             # Use the command output formatter from ProxmoxFormatters
             from ..formatting import ProxmoxFormatters
+
             formatted = ProxmoxFormatters.format_command_output(
                 success=result["success"],
                 command=command,
                 output=result["output"],
-                error=result.get("error")
+                error=result.get("error"),
             )
             return [Content(type="text", text=formatted)]
         except Exception as e:

@@ -1,0 +1,9 @@
+{
+  "proxmox_host": "https://your-proxmox-host:8006",
+  "login_user": "root@pam",
+  "login_password": "yourpassword",
+  "verify_ssl": false,
+  "other_options": {
+    // add any other specific config your app requires here
+  }
+}

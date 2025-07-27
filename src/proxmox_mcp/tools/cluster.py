@@ -11,19 +11,21 @@ The tools provide essential information for maintaining
 cluster health and ensuring proper operation.
 """
 from typing import List
+
 from mcp.types import TextContent as Content
+
 from .base import ProxmoxTool
-from .definitions import GET_CLUSTER_STATUS_DESC
+
 
 class ClusterTools(ProxmoxTool):
     """Tools for managing Proxmox cluster.
-    
+
     Provides functionality for:
     - Monitoring cluster health and status
     - Tracking quorum and node membership
     - Managing cluster-wide resources
     - Verifying cluster configuration
-    
+
     Essential for maintaining cluster health and ensuring
     proper operation of the Proxmox environment.
     """
@@ -36,7 +38,7 @@ class ClusterTools(ProxmoxTool):
         - Quorum status (essential for cluster operations)
         - Active node count and health
         - Resource distribution and status
-        
+
         This information is critical for:
         - Ensuring cluster stability
         - Monitoring node membership
@@ -69,7 +71,7 @@ class ClusterTools(ProxmoxTool):
                 "name": result[0].get("name") if result else None,
                 "quorum": result[0].get("quorate"),
                 "nodes": len([node for node in result if node.get("type") == "node"]),
-                "resources": [res for res in result if res.get("type") == "resource"]
+                "resources": [res for res in result if res.get("type") == "resource"],
             }
             return self._format_response(status, "cluster")
         except Exception as e:

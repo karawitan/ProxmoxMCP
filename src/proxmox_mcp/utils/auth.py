@@ -3,15 +3,18 @@ Authentication utilities for the Proxmox MCP server.
 """
 
 import os
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 from pydantic import BaseModel
 
+
 class ProxmoxAuth(BaseModel):
     """Proxmox authentication configuration."""
+
     user: str
     token_name: str
     token_value: str
+
 
 def load_auth_from_env() -> ProxmoxAuth:
     """
@@ -48,6 +51,7 @@ def load_auth_from_env() -> ProxmoxAuth:
         token_value=token_value,
     )
 
+
 def parse_user(user: str) -> Tuple[str, str]:
     """
     Parse a Proxmox user string into username and realm.
@@ -68,6 +72,7 @@ def parse_user(user: str) -> Tuple[str, str]:
         raise ValueError(
             "Invalid user format. Expected 'username@realm' (e.g., 'root@pam' or 'user@pve')"
         )
+
 
 def get_auth_dict(auth: ProxmoxAuth) -> Dict[str, str]:
     """

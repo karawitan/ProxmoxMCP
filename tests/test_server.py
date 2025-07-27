@@ -3,13 +3,27 @@ Tests for the Proxmox MCP server.
 """
 
 import os
-import json
-import pytest
-from unittest.mock import Mock, patch
+from dotenv import load_dotenv
+from unittest.mock import patch
 
-from mcp.server.fastmcp import FastMCP
+import pytest
 from mcp.server.fastmcp.exceptions import ToolError
 from proxmox_mcp.server import ProxmoxMCPServer
+
+# Load .env variables into the environment
+load_dotenv()
+
+# Access environment variables
+proxmox_host = os.getenv("PROXMOX_HOST")
+proxmox_user = os.getenv("PROXMOX_USER")
+proxmox_token_name = os.getenv("PROXMOX_TOKEN_NAME")
+proxmox_token_value = os.getenv("PROXMOX_TOKEN_VALUE")
+log_level = os.getenv("LOG_LEVEL")
+
+print(f"Proxmox Host: {proxmox_host}")
+print(f"Proxmox User: {proxmox_user}")
+print(f"Proxmox Token Name: {proxmox_token_name}")
+print(f"Log Level: {log_level}")
 
 
 @pytest.fixture
@@ -30,10 +44,10 @@ def mock_env_vars():
 def mock_config():
     """Fixture to mock load_config to use environment variables."""
     from proxmox_mcp.config.models import (
-        Config,
-        ProxmoxConfig,
         AuthConfig,
+        Config,
         LoggingConfig,
+        ProxmoxConfig,
     )
 
     def mock_load_config(config_path=None):
@@ -152,9 +166,7 @@ async def test_get_node_status(server, mock_proxmox):
 @pytest.mark.asyncio
 async def test_get_vms(server, mock_proxmox):
     """Test get_vms tool."""
-    mock_proxmox.return_value.nodes.get.return_value = [
-        {"node": "node1", "status": "online"}
-    ]
+    mock_proxmox.return_value.nodes.get.return_value = [{"node": "node1", "status": "online"}]
     mock_proxmox.return_value.nodes.return_value.qemu.get.return_value = [
         {
             "vmid": "100",
@@ -236,22 +248,29 @@ async def test_get_cluster_status(server, mock_proxmox):
 async def test_execute_vm_command_success(server, mock_proxmox):
     """Test successful VM command execution."""
     # Mock VM status check
-    mock_proxmox.return_value.nodes.return_value.qemu.return_value.status.current.get.return_value = {
-        "status": "running"
-    }
+    mock_proxmox.return_value.nodes.return_value.qemu.return_value.status.current.get.return_value = (
+        {
+            "status": "running"
+        }
+    )
     # Mock two-phase command execution: exec returns pid, exec-status returns results
-    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.post.return_value = {
-        "pid": 12345
-    }
-    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.get.return_value = {
-        "out-data": "command output",
-        "err-data": "",
-        "exitcode": 0,
-        "exited": 1,
-    }
+    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.post.return_value = (
+        {
+            "pid": 12345
+        }
+    )
+    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.get.return_value = (
+        {
+            "out-data": "command output",
+            "err-data": "",
+            "exitcode": 0,
+            "exited": 1,
+        }
+    )
 
     response = await server.mcp.call_tool(
-        "execute_vm_command", {"node": "node1", "vmid": "100", "command": "ls -l"}
+        "execute_vm_command",
+        {"node": "node1", "vmid": "100", "command": "ls -l"}
     )
     # The response is formatted text, not JSON, so check that it contains expected information
     response_text = response[0].text
@@ -264,19 +283,25 @@ async def test_execute_vm_command_success(server, mock_proxmox):
 async def test_execute_vm_command_missing_parameters(server):
     """Test VM command execution with missing parameters."""
     with pytest.raises(ToolError):
-        await server.mcp.call_tool("execute_vm_command", {})
+        await server.mcp.call_tool(
+            "execute_vm_command",
+            {}
+        )
 
 
 @pytest.mark.asyncio
 async def test_execute_vm_command_vm_not_running(server, mock_proxmox):
     """Test VM command execution when VM is not running."""
-    mock_proxmox.return_value.nodes.return_value.qemu.return_value.status.current.get.return_value = {
-        "status": "stopped"
-    }
+    mock_proxmox.return_value.nodes.return_value.qemu.return_value.status.current.get.return_value = (
+        {
+            "status": "stopped"
+        }
+    )
 
     with pytest.raises(ToolError, match="not running"):
         await server.mcp.call_tool(
-            "execute_vm_command", {"node": "node1", "vmid": "100", "command": "ls -l"}
+            "execute_vm_command",
+            {"node": "node1", "vmid": "100", "command": "ls -l"}
         )
 
 
@@ -284,23 +309,29 @@ async def test_execute_vm_command_vm_not_running(server, mock_proxmox):
 async def test_execute_vm_command_with_error(server, mock_proxmox):
     """Test VM command execution with command error."""
     # Mock VM status check
-    mock_proxmox.return_value.nodes.return_value.qemu.return_value.status.current.get.return_value = {
-        "status": "running"
-    }
+    mock_proxmox.return_value.nodes.return_value.qemu.return_value.status.current.get.return_value = (
+        {
+            "status": "running"
+        }
+    )
     # Mock two-phase command execution with error
-    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.post.return_value = {
-        "pid": 12345
-    }
-    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.get.return_value = {
-        "out-data": "",
-        "err-data": "command not found",
-        "exitcode": 1,
-        "exited": 1,
-    }
+    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.post.return_value = (
+        {
+            "pid": 12345
+        }
+    )
+    mock_proxmox.return_value.nodes.return_value.qemu.return_value.agent.return_value.get.return_value = (
+        {
+            "out-data": "",
+            "err-data": "command not found",
+            "exitcode": 1,
+            "exited": 1,
+        }
+    )
 
     response = await server.mcp.call_tool(
         "execute_vm_command",
-        {"node": "node1", "vmid": "100", "command": "ls /proc/nonexistent"},
+        {"node": "node1", "vmid": "100", "command": "ls /proc/nonexistent"}
     )
     # The response is formatted text, not JSON, so check that it contains expected information
     response_text = response[0].text

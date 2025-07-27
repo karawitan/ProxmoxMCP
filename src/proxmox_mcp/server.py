@@ -14,42 +14,38 @@ The server exposes a set of tools for managing Proxmox resources including:
 - Storage management
 - Cluster status monitoring
 """
-import logging
 import os
-import sys
 import signal
+import sys
 import warnings
-from typing import Optional, List, Annotated
+from typing import Annotated, Optional
 
 from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.tools import Tool
-from mcp.types import TextContent as Content
 from pydantic import Field
+
+from .config.loader import load_config
+from .core.logging import setup_logging
+from .core.proxmox import ProxmoxManager
+from .tools.cluster import ClusterTools
+from .tools.definitions import (
+    EXECUTE_VM_COMMAND_DESC,
+    GET_CLUSTER_STATUS_DESC,
+    GET_NODE_STATUS_DESC,
+    GET_NODES_DESC,
+    GET_STORAGE_DESC,
+    GET_VMS_DESC,
+
+)
+from .tools.node import NodeTools
+from .tools.storage import StorageTools
+from .tools.vm import VMTools
+from .utils.warnings_fix import setup_warning_filters
 
 # Configure warnings before importing other modules
 warnings.filterwarnings("default")  # Enable all warnings by default
 
-from .config.loader import load_config
-from .core.logging import setup_logging
-from .utils.warnings_fix import setup_warning_filters
-
 # Set up warning filters early
 setup_warning_filters()
-
-from .core.proxmox import ProxmoxManager
-from .tools.node import NodeTools
-from .tools.vm import VMTools
-from .tools.storage import StorageTools
-from .tools.cluster import ClusterTools
-from .tools.definitions import (
-    GET_NODES_DESC,
-    GET_NODE_STATUS_DESC,
-    GET_VMS_DESC,
-    EXECUTE_VM_COMMAND_DESC,
-    GET_CONTAINERS_DESC,
-    GET_STORAGE_DESC,
-    GET_CLUSTER_STATUS_DESC,
-)
 
 
 class ProxmoxMCPServer:
@@ -100,9 +96,7 @@ class ProxmoxMCPServer:
         def get_node_status(
             node: Annotated[
                 str,
-                Field(
-                    description="Name/ID of node to query (e.g. 'pve1', 'proxmox-node2')"
-                ),
+                Field(description="Name/ID of node to query (e.g. 'pve1', 'proxmox-node2')"),
             ]
         ):
             return self.node_tools.get_node_status(node)

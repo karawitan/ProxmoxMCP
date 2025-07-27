@@ -13,19 +13,21 @@ The tools implement fallback mechanisms for scenarios where
 detailed storage information might be temporarily unavailable.
 """
 from typing import List
+
 from mcp.types import TextContent as Content
+
 from .base import ProxmoxTool
-from .definitions import GET_STORAGE_DESC
+
 
 class StorageTools(ProxmoxTool):
     """Tools for managing Proxmox storage.
-    
+
     Provides functionality for:
     - Retrieving cluster-wide storage information
     - Monitoring storage pool status and health
     - Tracking storage utilization and capacity
     - Managing storage content types
-    
+
     Implements fallback mechanisms for scenarios where detailed
     storage information might be temporarily unavailable.
     """
@@ -41,7 +43,7 @@ class StorageTools(ProxmoxTool):
           * Used space
           * Total capacity
           * Available space
-        
+
         Implements a fallback mechanism that returns basic information
         if detailed status retrieval fails for any storage pool.
 
@@ -63,32 +65,40 @@ class StorageTools(ProxmoxTool):
         try:
             result = self.proxmox.storage.get()
             storage = []
-            
+
             for store in result:
                 # Get detailed storage info including usage
                 try:
-                    status = self.proxmox.nodes(store.get("node", "localhost")).storage(store["storage"]).status.get()
-                    storage.append({
-                        "storage": store["storage"],
-                        "type": store["type"],
-                        "content": store.get("content", []),
-                        "status": "online" if store.get("enabled", True) else "offline",
-                        "used": status.get("used", 0),
-                        "total": status.get("total", 0),
-                        "available": status.get("avail", 0)
-                    })
+                    status = (
+                        self.proxmox.nodes(store.get("node", "localhost"))
+                        .storage(store["storage"])
+                        .status.get()
+                    )
+                    storage.append(
+                        {
+                            "storage": store["storage"],
+                            "type": store["type"],
+                            "content": store.get("content", []),
+                            "status": "online" if store.get("enabled", True) else "offline",
+                            "used": status.get("used", 0),
+                            "total": status.get("total", 0),
+                            "available": status.get("avail", 0),
+                        }
+                    )
                 except Exception:
                     # If detailed status fails, add basic info
-                    storage.append({
-                        "storage": store["storage"],
-                        "type": store["type"],
-                        "content": store.get("content", []),
-                        "status": "online" if store.get("enabled", True) else "offline",
-                        "used": 0,
-                        "total": 0,
-                        "available": 0
-                    })
-                    
+                    storage.append(
+                        {
+                            "storage": store["storage"],
+                            "type": store["type"],
+                            "content": store.get("content", []),
+                            "status": "online" if store.get("enabled", True) else "offline",
+                            "used": 0,
+                            "total": 0,
+                            "available": 0,
+                        }
+                    )
+
             return self._format_response(storage, "storage")
         except Exception as e:
             self._handle_error("get storage", e)
