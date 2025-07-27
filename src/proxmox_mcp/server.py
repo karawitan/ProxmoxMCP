@@ -27,7 +27,7 @@ from mcp.types import TextContent as Content
 from pydantic import Field
 
 # Configure warnings before importing other modules
-warnings.filterwarnings('default')  # Enable all warnings by default
+warnings.filterwarnings("default")  # Enable all warnings by default
 
 from .config.loader import load_config
 from .core.logging import setup_logging
@@ -48,8 +48,9 @@ from .tools.definitions import (
     EXECUTE_VM_COMMAND_DESC,
     GET_CONTAINERS_DESC,
     GET_STORAGE_DESC,
-    GET_CLUSTER_STATUS_DESC
+    GET_CLUSTER_STATUS_DESC,
 )
+
 
 class ProxmoxMCPServer:
     """Main server class for Proxmox MCP."""
@@ -62,34 +63,34 @@ class ProxmoxMCPServer:
         """
         self.config = load_config(config_path)
         self.logger = setup_logging(self.config.logging)
-        
+
         # Initialize core components
         self.proxmox_manager = ProxmoxManager(self.config.proxmox, self.config.auth)
         self.proxmox = self.proxmox_manager.get_api()
-        
+
         # Initialize tools
         self.node_tools = NodeTools(self.proxmox)
         self.vm_tools = VMTools(self.proxmox)
         self.storage_tools = StorageTools(self.proxmox)
         self.cluster_tools = ClusterTools(self.proxmox)
-        
+
         # Initialize MCP server
         self.mcp = FastMCP("ProxmoxMCP")
         self._setup_tools()
 
     def _setup_tools(self) -> None:
         """Register MCP tools with the server.
-        
+
         Initializes and registers all available tools with the MCP server:
         - Node management tools (list nodes, get status)
         - VM operation tools (list VMs, execute commands)
         - Storage management tools (list storage)
         - Cluster tools (get cluster status)
-        
+
         Each tool is registered with appropriate descriptions and parameter
         validation using Pydantic models.
         """
-        
+
         # Node tools
         @self.mcp.tool(description=GET_NODES_DESC)
         def get_nodes():
@@ -97,7 +98,12 @@ class ProxmoxMCPServer:
 
         @self.mcp.tool(description=GET_NODE_STATUS_DESC)
         def get_node_status(
-            node: Annotated[str, Field(description="Name/ID of node to query (e.g. 'pve1', 'proxmox-node2')")]
+            node: Annotated[
+                str,
+                Field(
+                    description="Name/ID of node to query (e.g. 'pve1', 'proxmox-node2')"
+                ),
+            ]
         ):
             return self.node_tools.get_node_status(node)
 
@@ -108,9 +114,16 @@ class ProxmoxMCPServer:
 
         @self.mcp.tool(description=EXECUTE_VM_COMMAND_DESC)
         async def execute_vm_command(
-            node: Annotated[str, Field(description="Host node name (e.g. 'pve1', 'proxmox-node2')")],
+            node: Annotated[
+                str, Field(description="Host node name (e.g. 'pve1', 'proxmox-node2')")
+            ],
             vmid: Annotated[str, Field(description="VM ID number (e.g. '100', '101')")],
-            command: Annotated[str, Field(description="Shell command to run (e.g. 'uname -a', 'systemctl status nginx')")]
+            command: Annotated[
+                str,
+                Field(
+                    description="Shell command to run (e.g. 'uname -a', 'systemctl status nginx')"
+                ),
+            ],
         ):
             return await self.vm_tools.execute_command(node, vmid, command)
 
@@ -126,12 +139,12 @@ class ProxmoxMCPServer:
 
     def start(self) -> None:
         """Start the MCP server.
-        
+
         Initializes the server with:
         - Signal handlers for graceful shutdown (SIGINT, SIGTERM)
         - Async runtime for handling concurrent requests
         - Error handling and logging
-        
+
         The server runs until terminated by a signal or fatal error.
         """
         import anyio
@@ -151,12 +164,13 @@ class ProxmoxMCPServer:
             self.logger.error(f"Server error: {e}")
             sys.exit(1)
 
+
 if __name__ == "__main__":
     config_path = os.getenv("PROXMOX_MCP_CONFIG")
     if not config_path:
         print("PROXMOX_MCP_CONFIG environment variable must be set")
         sys.exit(1)
-    
+
     try:
         server = ProxmoxMCPServer(config_path)
         server.start()
