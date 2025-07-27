@@ -92,7 +92,7 @@ async def test_execute_command_with_error_output(vm_console, mock_proxmox):
         "exited": 1
     }
 
-    result = await vm_console.execute_command("node1", "100", "invalid-command")
+    result = await vm_console.execute_command("node1", "100", "ls /proc/nonexistent")
 
     assert result["success"] is True  # Success refers to API call, not command
     assert result["output"] == ""

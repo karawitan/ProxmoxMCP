@@ -255,10 +255,10 @@ async def test_execute_vm_command_with_error(server, mock_proxmox):
     response = await server.mcp.call_tool("execute_vm_command", {
         "node": "node1",
         "vmid": "100",
-        "command": "invalid-command"
+        "command": "ls /proc/nonexistent"
     })
     # The response is formatted text, not JSON, so check that it contains expected information
     response_text = response[0].text
     assert "SUCCESS" in response_text or "success" in response_text.lower()  # API call succeeded
     assert "command not found" in response_text
-    assert "invalid-command" in response_text
+    assert "ls /proc/nonexistent" in response_text
