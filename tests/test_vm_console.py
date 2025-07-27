@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 from proxmox_mcp.tools.console import VMConsoleManager
 
+
 @pytest.fixture
 def mock_proxmox():
     """Fixture to create a mock ProxmoxAPI instance."""
@@ -23,14 +24,16 @@ def mock_proxmox():
         "out-data": "command output",
         "err-data": "",
         "exitcode": 0,
-        "exited": 1
+        "exited": 1,
     }
     return mock
+
 
 @pytest.fixture
 def vm_console(mock_proxmox):
     """Fixture to create a VMConsoleManager instance."""
     return VMConsoleManager(mock_proxmox)
+
 
 @pytest.mark.asyncio
 async def test_execute_command_success(vm_console, mock_proxmox):
@@ -53,6 +56,7 @@ async def test_execute_command_success(vm_console, mock_proxmox):
         command="ls -l"
     )
 
+
 @pytest.mark.asyncio
 async def test_execute_command_vm_not_running(vm_console, mock_proxmox):
     """Test command execution on stopped VM."""
@@ -63,23 +67,28 @@ async def test_execute_command_vm_not_running(vm_console, mock_proxmox):
     with pytest.raises(ValueError, match="not running"):
         await vm_console.execute_command("node1", "100", "ls -l")
 
+
 @pytest.mark.asyncio
 async def test_execute_command_vm_not_found(vm_console, mock_proxmox):
     """Test command execution on non-existent VM."""
-    mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = \
+    mock_proxmox.nodes.return_value.qemu.return_value.status.current.get.side_effect = (
         Exception("VM not found")
+    )
 
     with pytest.raises(ValueError, match="not found"):
         await vm_console.execute_command("node1", "100", "ls -l")
 
+
 @pytest.mark.asyncio
 async def test_execute_command_failure(vm_console, mock_proxmox):
     """Test command execution failure."""
-    mock_proxmox.nodes.return_value.qemu.return_value.agent.return_value.post.side_effect = \
-        Exception("Command failed")
+    mock_proxmox.nodes.return_value.qemu.return_value.agent.return_value.post.side_effect = Exception(
+        "Command failed"
+    )
 
     with pytest.raises(RuntimeError, match="Failed to execute command"):
         await vm_console.execute_command("node1", "100", "ls -l")
+
 
 @pytest.mark.asyncio
 async def test_execute_command_with_error_output(vm_console, mock_proxmox):
@@ -89,7 +98,7 @@ async def test_execute_command_with_error_output(vm_console, mock_proxmox):
         "out-data": "",
         "err-data": "command error",
         "exitcode": 1,
-        "exited": 1
+        "exited": 1,
     }
 
     result = await vm_console.execute_command("node1", "100", "ls /proc/nonexistent")

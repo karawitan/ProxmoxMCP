@@ -11,6 +11,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 from proxmox_mcp.server import ProxmoxMCPServer
 
+
 @pytest.fixture
 def mock_env_vars():
     """Fixture to set up test environment variables."""
@@ -19,36 +20,41 @@ def mock_env_vars():
         "PROXMOX_USER": "test@pve",
         "PROXMOX_TOKEN_NAME": "test_token",
         "PROXMOX_TOKEN_VALUE": "test_value",
-        "LOG_LEVEL": "DEBUG"
+        "LOG_LEVEL": "DEBUG",
     }
     with patch.dict(os.environ, env_vars):
         yield env_vars
 
+
 @pytest.fixture
 def mock_config():
     """Fixture to mock load_config to use environment variables."""
-    from proxmox_mcp.config.models import Config, ProxmoxConfig, AuthConfig, LoggingConfig
-    
+    from proxmox_mcp.config.models import (
+        Config,
+        ProxmoxConfig,
+        AuthConfig,
+        LoggingConfig,
+    )
+
     def mock_load_config(config_path=None):
         return Config(
             proxmox=ProxmoxConfig(
                 host=os.environ["PROXMOX_HOST"],
                 port=8006,
                 verify_ssl=True,
-                service="PVE"
+                service="PVE",
             ),
             auth=AuthConfig(
                 user=os.environ["PROXMOX_USER"],
                 token_name=os.environ["PROXMOX_TOKEN_NAME"],
-                token_value=os.environ["PROXMOX_TOKEN_VALUE"]
+                token_value=os.environ["PROXMOX_TOKEN_VALUE"],
             ),
-            logging=LoggingConfig(
-                level=os.environ.get("LOG_LEVEL", "INFO")
-            )
+            logging=LoggingConfig(level=os.environ.get("LOG_LEVEL", "INFO")),
         )
-    
+
     with patch("proxmox_mcp.server.load_config", side_effect=mock_load_config):
         yield mock_load_config
+
 
 @pytest.fixture
 def mock_proxmox():
@@ -56,14 +62,16 @@ def mock_proxmox():
     with patch("proxmox_mcp.core.proxmox.ProxmoxAPI") as mock:
         mock.return_value.nodes.get.return_value = [
             {"node": "node1", "status": "online"},
-            {"node": "node2", "status": "online"}
+            {"node": "node2", "status": "online"},
         ]
         yield mock
+
 
 @pytest.fixture
 def server(mock_env_vars, mock_config, mock_proxmox):
     """Fixture to create a ProxmoxMCPServer instance."""
     return ProxmoxMCPServer()
+
 
 def test_server_initialization(server, mock_proxmox):
     """Test server initialization with environment variables."""
@@ -74,6 +82,7 @@ def test_server_initialization(server, mock_proxmox):
     assert server.config.logging.level == "DEBUG"
 
     mock_proxmox.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_list_tools(server):
@@ -87,32 +96,38 @@ async def test_list_tools(server):
     # get_containers tool is not implemented
     assert "execute_vm_command" in tool_names
 
+
 @pytest.mark.asyncio
 async def test_get_nodes(server, mock_proxmox):
     """Test get_nodes tool."""
     # Mock the node list call
     mock_proxmox.return_value.nodes.get.return_value = [
         {"node": "node1", "status": "online"},
-        {"node": "node2", "status": "online"}
+        {"node": "node2", "status": "online"},
     ]
     # Mock the detailed status calls for each node with proper numeric values
     mock_proxmox.return_value.nodes.return_value.status.get.return_value = {
         "uptime": 123456,
         "cpuinfo": {"cpus": 4},
-        "memory": {"used": 1024*1024*1024, "total": 4*1024*1024*1024}  # 1GB used, 4GB total
+        "memory": {
+            "used": 1024 * 1024 * 1024,
+            "total": 4 * 1024 * 1024 * 1024,
+        },  # 1GB used, 4GB total
     }
-    
+
     response = await server.mcp.call_tool("get_nodes", {})
     # The response is formatted text, not JSON, so check that it contains the node names
     response_text = response[0].text
     assert "node1" in response_text
     assert "node2" in response_text
 
+
 @pytest.mark.asyncio
 async def test_get_node_status_missing_parameter(server):
     """Test get_node_status tool with missing parameter."""
     with pytest.raises(ToolError, match="Field required"):
         await server.mcp.call_tool("get_node_status", {})
+
 
 @pytest.mark.asyncio
 async def test_get_node_status(server, mock_proxmox):
@@ -121,7 +136,10 @@ async def test_get_node_status(server, mock_proxmox):
         "status": "running",
         "uptime": 123456,
         "cpuinfo": {"cpus": 4},
-        "memory": {"used": 1024*1024*1024, "total": 4*1024*1024*1024}  # 1GB used, 4GB total
+        "memory": {
+            "used": 1024 * 1024 * 1024,
+            "total": 4 * 1024 * 1024 * 1024,
+        },  # 1GB used, 4GB total
     }
 
     response = await server.mcp.call_tool("get_node_status", {"node": "node1"})
@@ -130,13 +148,28 @@ async def test_get_node_status(server, mock_proxmox):
     assert "node1" in response_text
     assert "RUNNING" in response_text or "running" in response_text
 
+
 @pytest.mark.asyncio
 async def test_get_vms(server, mock_proxmox):
     """Test get_vms tool."""
-    mock_proxmox.return_value.nodes.get.return_value = [{"node": "node1", "status": "online"}]
+    mock_proxmox.return_value.nodes.get.return_value = [
+        {"node": "node1", "status": "online"}
+    ]
     mock_proxmox.return_value.nodes.return_value.qemu.get.return_value = [
-        {"vmid": "100", "name": "vm1", "status": "running", "mem": 1024*1024*1024, "maxmem": 2*1024*1024*1024},
-        {"vmid": "101", "name": "vm2", "status": "stopped", "mem": 0, "maxmem": 1024*1024*1024}
+        {
+            "vmid": "100",
+            "name": "vm1",
+            "status": "running",
+            "mem": 1024 * 1024 * 1024,
+            "maxmem": 2 * 1024 * 1024 * 1024,
+        },
+        {
+            "vmid": "101",
+            "name": "vm2",
+            "status": "stopped",
+            "mem": 0,
+            "maxmem": 1024 * 1024 * 1024,
+        },
     ]
     # Mock VM config calls with proper numeric values
     mock_proxmox.return_value.nodes.return_value.qemu.return_value.config.get.return_value = {
@@ -154,14 +187,26 @@ async def test_get_vms(server, mock_proxmox):
 async def test_get_storage(server, mock_proxmox):
     """Test get_storage tool."""
     mock_proxmox.return_value.storage.get.return_value = [
-        {"storage": "local", "type": "dir", "node": "node1", "enabled": True, "content": ["images", "rootdir"]},
-        {"storage": "ceph", "type": "rbd", "node": "node1", "enabled": True, "content": ["images"]}
+        {
+            "storage": "local",
+            "type": "dir",
+            "node": "node1",
+            "enabled": True,
+            "content": ["images", "rootdir"],
+        },
+        {
+            "storage": "ceph",
+            "type": "rbd",
+            "node": "node1",
+            "enabled": True,
+            "content": ["images"],
+        },
     ]
     # Mock storage status calls with proper numeric values
     mock_proxmox.return_value.nodes.return_value.storage.return_value.status.get.return_value = {
-        "used": 1024*1024*1024,  # 1GB used
-        "total": 10*1024*1024*1024,  # 10GB total
-        "avail": 9*1024*1024*1024   # 9GB available
+        "used": 1024 * 1024 * 1024,  # 1GB used
+        "total": 10 * 1024 * 1024 * 1024,  # 10GB total
+        "avail": 9 * 1024 * 1024 * 1024,  # 9GB available
     }
 
     response = await server.mcp.call_tool("get_storage", {})
@@ -170,6 +215,7 @@ async def test_get_storage(server, mock_proxmox):
     assert "local" in response_text
     assert "ceph" in response_text
 
+
 @pytest.mark.asyncio
 async def test_get_cluster_status(server, mock_proxmox):
     """Test get_cluster_status tool."""
@@ -177,13 +223,14 @@ async def test_get_cluster_status(server, mock_proxmox):
     mock_proxmox.return_value.cluster.status.get.return_value = [
         {"name": "test-cluster", "quorate": 1, "type": "cluster"},
         {"name": "node1", "type": "node", "online": 1},
-        {"name": "node2", "type": "node", "online": 1}
+        {"name": "node2", "type": "node", "online": 1},
     ]
 
     response = await server.mcp.call_tool("get_cluster_status", {})
     # The response is formatted text, not JSON, so check that it contains expected information
     response_text = response[0].text
     assert "test-cluster" in response_text or "cluster" in response_text.lower()
+
 
 @pytest.mark.asyncio
 async def test_execute_vm_command_success(server, mock_proxmox):
@@ -200,25 +247,25 @@ async def test_execute_vm_command_success(server, mock_proxmox):
         "out-data": "command output",
         "err-data": "",
         "exitcode": 0,
-        "exited": 1
+        "exited": 1,
     }
 
-    response = await server.mcp.call_tool("execute_vm_command", {
-        "node": "node1",
-        "vmid": "100",
-        "command": "ls -l"
-    })
+    response = await server.mcp.call_tool(
+        "execute_vm_command", {"node": "node1", "vmid": "100", "command": "ls -l"}
+    )
     # The response is formatted text, not JSON, so check that it contains expected information
     response_text = response[0].text
     assert "SUCCESS" in response_text or "success" in response_text.lower()
     assert "command output" in response_text
     assert "ls -l" in response_text
 
+
 @pytest.mark.asyncio
 async def test_execute_vm_command_missing_parameters(server):
     """Test VM command execution with missing parameters."""
     with pytest.raises(ToolError):
         await server.mcp.call_tool("execute_vm_command", {})
+
 
 @pytest.mark.asyncio
 async def test_execute_vm_command_vm_not_running(server, mock_proxmox):
@@ -228,11 +275,10 @@ async def test_execute_vm_command_vm_not_running(server, mock_proxmox):
     }
 
     with pytest.raises(ToolError, match="not running"):
-        await server.mcp.call_tool("execute_vm_command", {
-            "node": "node1",
-            "vmid": "100",
-            "command": "ls -l"
-        })
+        await server.mcp.call_tool(
+            "execute_vm_command", {"node": "node1", "vmid": "100", "command": "ls -l"}
+        )
+
 
 @pytest.mark.asyncio
 async def test_execute_vm_command_with_error(server, mock_proxmox):
@@ -249,16 +295,17 @@ async def test_execute_vm_command_with_error(server, mock_proxmox):
         "out-data": "",
         "err-data": "command not found",
         "exitcode": 1,
-        "exited": 1
+        "exited": 1,
     }
 
-    response = await server.mcp.call_tool("execute_vm_command", {
-        "node": "node1",
-        "vmid": "100",
-        "command": "ls /proc/nonexistent"
-    })
+    response = await server.mcp.call_tool(
+        "execute_vm_command",
+        {"node": "node1", "vmid": "100", "command": "ls /proc/nonexistent"},
+    )
     # The response is formatted text, not JSON, so check that it contains expected information
     response_text = response[0].text
-    assert "SUCCESS" in response_text or "success" in response_text.lower()  # API call succeeded
+    assert (
+        "SUCCESS" in response_text or "success" in response_text.lower()
+    )  # API call succeeded
     assert "command not found" in response_text
     assert "ls /proc/nonexistent" in response_text
