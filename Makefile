@@ -52,14 +52,15 @@ setup: venv install-dev
 venv:
 	@echo "$(YELLOW)📦 Creating virtual environment...$(NC)"
 	python3 -m venv $(VENV_DIR)
+	$(PIP) install --upgrade pip
+	$(PIP) install build
+	$(PIP) install -e .
 	@echo "$(GREEN)✅ Virtual environment created in $(VENV_DIR)$(NC)"
 
 # Install package in development mode
 install:
 	@echo "$(YELLOW)📥 Installing package in development mode...$(NC)"
-	$(PIP) install --upgrade pip
-	$(PIP) install build
-	$(PIP) install -e .
+	$(PIP) install dist/proxmox_mcp-0.1.1-py3-none-any.whl
 	@echo "$(GREEN)✅ Package installed$(NC)"
 
 # Install with development dependencies
