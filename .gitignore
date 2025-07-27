@@ -58,4 +58,5 @@ coverage.xml
 .uv/
 
 # Local configuration
-config/config.json
+config.json
+config.proxmox.json
