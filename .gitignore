@@ -59,4 +59,6 @@ coverage.xml
 
 # Local configuration
 config.json
+config.yml
 config.proxmox.json
+config.proxmox.yml
