@@ -1,9 +1,9 @@
-# ProxmoxMCP Makefile
+:# ProxmoxMCP Makefile
 # ===================
 
 # Variables
-PYTHON = python3
-PIP = pip
+PYTHON = . venv/bin/activate ; python3
+PIP = . venv/bin/activate ; pip
 VENV_DIR = venv
 SRC_DIR = src
 TESTS_DIR = tests
@@ -42,7 +42,6 @@ help:
 	@echo ""
 	@echo "$(YELLOW)Run:$(NC)"
 	@echo "  make run          - Run the ProxmoxMCP server"
-	@echo "  make demo         - Run demo/test scripts"
 
 # Setup complete development environment
 setup: venv install-dev
@@ -52,12 +51,14 @@ setup: venv install-dev
 # Create virtual environment
 venv:
 	@echo "$(YELLOW)📦 Creating virtual environment...$(NC)"
-	$(PYTHON) -m venv $(VENV_DIR)
+	python3 -m venv $(VENV_DIR)
 	@echo "$(GREEN)✅ Virtual environment created in $(VENV_DIR)$(NC)"
 
 # Install package in development mode
 install:
 	@echo "$(YELLOW)📥 Installing package in development mode...$(NC)"
+	$(PIP) install --upgrade pip
+	$(PIP) install build
 	$(PIP) install -e .
 	@echo "$(GREEN)✅ Package installed$(NC)"
 
@@ -70,7 +71,7 @@ install-dev:
 # Run tests
 test:
 	@echo "$(YELLOW)🧪 Running tests...$(NC)"
-	pytest
+	. venv/bin/activate && pytest -v
 	@echo "$(GREEN)✅ All tests passed$(NC)"
 
 # Run tests with verbose output
@@ -130,17 +131,6 @@ run:
 	@echo "$(YELLOW)💡 Make sure you have configured your Proxmox credentials!$(NC)"
 	$(PYTHON) -m proxmox_mcp.server
 
-# Run demo scripts
-demo:
-	@echo "$(YELLOW)🎬 Running demo scripts...$(NC)"
-	@if [ -f "realistic_demo.py" ]; then \
-		echo "$(YELLOW)  → Running realistic demo...$(NC)"; \
-		$(PYTHON) realistic_demo.py; \
-	fi
-	@if [ -f "demo_warnings_fix.py" ]; then \
-		echo "$(YELLOW)  → Running warnings fix demo...$(NC)"; \
-		$(PYTHON) demo_warnings_fix.py; \
-	fi
 
 # Quick development cycle
 dev: format test
